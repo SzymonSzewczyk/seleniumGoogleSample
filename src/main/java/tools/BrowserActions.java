@@ -1,6 +1,8 @@
 package tools;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,5 +39,16 @@ public class BrowserActions {
 				logger.error("Interrupted while waiting");
 			}
 		}
+	}
+
+	public boolean isElementVisible(By elementLocator) {
+		boolean result = false;
+		try {
+			result = getDriver().findElement(elementLocator).isDisplayed();
+			logger.info("Element found");
+		} catch (NoSuchElementException e) {
+			logger.info("Element not found");
+		}
+		return result;
 	}
 }
