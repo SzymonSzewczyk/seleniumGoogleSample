@@ -17,7 +17,7 @@ public abstract class SetupUIGoogle extends GenericUI {
 	@BeforeClass(alwaysRun = true)
 	public void setupBefore() {
 		initDriver();
-		driver.navigate().to("https://www.google.com/");
+		driver.navigate().to("https://todomvc.com/examples/typescript-angular/#/");
 		initPages();
 	}
 
