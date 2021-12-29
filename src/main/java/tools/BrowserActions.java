@@ -2,6 +2,7 @@ package tools;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,18 @@ public class BrowserActions {
 		waitForPageToLoad(5);
 	}
 
-	private void waitForPageToLoad(int timeOutInSeconds) {
+	public void openURL(String url) {
+		try {
+			logger.info("Opening page URL: " + url);
+			getDriver().navigate().to(url);
+			getDriver().manage().window().maximize();
+			logger.info("Page was opened and window maximized");
+		} catch (WebDriverException webDriverException) {
+			logger.error(String.format("Could not navigate to URL: %s ", url));
+		}
+	}
+
+	public void waitForPageToLoad(int timeOutInSeconds) {
 		long startTime = System.currentTimeMillis();
 		long endTime = System.currentTimeMillis() + 1000L * (long) timeOutInSeconds;
 
@@ -56,17 +68,6 @@ public class BrowserActions {
 		return result;
 	}
 
-	public void openURL(String url) {
-		try {
-			logger.info("Opening page URL: " + url);
-			getDriver().navigate().to(url);
-			getDriver().manage().window().maximize();
-			logger.info("Page was opened and window maximized");
-		} catch (WebDriverException webDriverException) {
-			logger.error(String.format("Could not navigate to URL: %s ", url));
-		}
-	}
-
 	public void waitForElementToBeVisible(By fieldLocator) {
 		waitForElementToBeVisible(fieldLocator, Duration.ofSeconds(10));
 	}
@@ -74,7 +75,58 @@ public class BrowserActions {
 	public void waitForElementToBeVisible(By fieldLocator, Duration maxSecondsTimeout) {
 		WebDriverWait wait = new WebDriverWait(getDriver(), maxSecondsTimeout);
 		wait.until(ExpectedConditions.visibilityOfElementLocated(fieldLocator));
+		waitForElementToBeDisplayed(fieldLocator, maxSecondsTimeout);
+	}
 
+	private void waitForElementToBeDisplayed(By fieldLocator, Duration maxSecondsTimeout) {
+		LocalTime start = LocalTime.now();
+		boolean isFound = false;
+		do {
+			try {
+				if (getDriver().findElement(fieldLocator).isDisplayed()) {
+					isFound = true;
+				} else {
+					logger.info("Sleeping while element " + fieldLocator + " is not displayed!");
+					waitABit(TimeOuts.TIMEOUT_100);
+				}
+			} catch (WebDriverException exc) {
+				logger.info("WebDriverException found... Sleeping while element " + fieldLocator + " is is not displayed!");
+				waitABit(TimeOuts.TIMEOUT_100);
+			}
+			if (Duration.between(start, LocalTime.now()).getSeconds() >= maxSecondsTimeout.getSeconds()) {
+				throw new WebDriverException("Element " + fieldLocator + " was not found after timeout: " + maxSecondsTimeout.getSeconds() + " sec.");
+			}
+		} while (!isFound);
+	}
+
+	public void fluentWaitForElementToBeVisible(By fieldLocator, Duration maxSecondsTimeout) {
+		FluentWait fluentWait = new FluentWait(getDriver())
+				.withTimeout(maxSecondsTimeout)
+				.pollingEvery(Duration.ofSeconds(1))
+				.ignoring(NoSuchElementException.class);
+
+		fluentWait.until(ExpectedConditions.visibilityOfElementLocated(fieldLocator));
+
+		// alternative usage
+//			WebElement element = (WebElement) fluentWait.until(new Function<WebDriver, WebElement>() {
+//				public WebElement apply(WebDriver driver) {
+//					//it is possible to put more check logic here
+//					return getDriver().findElement(fieldLocator);
+//				}
+//			});
+	}
+
+	public void waitForElementDisappears(By fieldLocator, Duration maxSecondsTimeout) {
+		WebDriverWait wait = new WebDriverWait(getDriver(), maxSecondsTimeout);
+		wait.until(ExpectedConditions.invisibilityOfElementLocated(fieldLocator));
+	}
+
+	public void waitABit(int timeOutInMilliSeconds) {
+		try {
+			Thread.sleep(timeOutInMilliSeconds);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public WebElement findElement(By by) {
@@ -211,16 +263,7 @@ public class BrowserActions {
 	}
 
 	public void clear(By byIdentifier) {
-		TODO
-	}
-
-
-	public void waitABit(int timeOutInMilliSeconds) {
-		try {
-			Thread.sleep(timeOutInMilliSeconds);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		findElement(byIdentifier).clear();
 	}
 
 
