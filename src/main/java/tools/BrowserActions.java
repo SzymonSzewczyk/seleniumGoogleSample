@@ -1,8 +1,10 @@
 package tools;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class BrowserActions {
 	private static final Logger logger = LoggerFactory.getLogger(BrowserActions.class);
@@ -204,7 +207,6 @@ public class BrowserActions {
 
 	public void setEditJavaScript(By fieldLocator, String value) {
 		LocalTime start = LocalTime.now();
-
 		try {
 			JavascriptExecutor executor = (JavascriptExecutor) getDriver();
 			executor.executeScript("arguments[0].setAttribute('value', '" + value + "')", findElement(fieldLocator));
@@ -262,9 +264,143 @@ public class BrowserActions {
 		}
 	}
 
+	public void clickLinkByPartialText(String partialText) {
+		click(By.partialLinkText(partialText));
+	}
+
+	public void clickLinkByExactText(String exactText) {
+		click(By.linkText(exactText));
+	}
+
+	public void rightClick(WebElement elementToClick) {
+		LocalTime start = LocalTime.now();
+		try {
+			Actions actions = new Actions(getDriver());
+			actions.moveToElement(elementToClick);
+			actions.contextClick(elementToClick);
+			actions.perform();
+		} catch (StaleElementReferenceException exc) {
+			if (Duration.between(start, LocalTime.now()).getSeconds() >= TimeOuts.TIMEOUT_5) {
+				throw new Error("Stale element ref found while right clicking on: " + elementToClick);
+			} else {
+				waitABit(TimeOuts.TIMEOUT_1000);
+				rightClick(elementToClick);
+			}
+		}
+	}
+
+	public void selectValueFromDropDown(By byIdentifier, String value) {
+		selectComboBox(byIdentifier, value);
+	}
+
+	public void selectComboBox(By byIdentifier, String value) {
+		LocalTime start = LocalTime.now();
+		try {
+			waitForElementToBeVisible(byIdentifier);
+			if (isElementVisible(byIdentifier)) {
+				Select dropdown = new Select(findElement(byIdentifier));
+				dropdown.selectByVisibleText(value);
+				logger.info(String.format("Dropdown: '%s' was selected with value: %s ", byIdentifier, value));
+			}
+		} catch (StaleElementReferenceException exc) {
+			if (Duration.between(start, LocalTime.now()).getSeconds() >= TimeOuts.TIMEOUT_5) {
+				throw new Error(String.format("Stale element ref found while selecting dropdown '%s' with value: %s ", byIdentifier, value));
+			} else {
+				waitABit(TimeOuts.TIMEOUT_1000);
+				selectComboBox(byIdentifier, value);
+			}
+		}
+	}
+
+	protected WebElement findElementByExactText(String text) {
+		List<WebElement> elements = getDriver().findElements(By.xpath("//*[text()='" + text + "']"));
+		if (elements.size() > 1) {
+			throw new Error(String.format("More than one elements found by text '%s'! Specify more precise selector.", text));
+		}
+		return elements.get(0);
+	}
+
+	protected WebElement findElementByPartText(String text) {
+		List<WebElement> elements = getDriver().findElements(By.xpath("//*[contains(text(), '" + text + "']"));
+		if (elements.size() > 1) {
+			throw new Error(String.format("More than one elements found by text '%s'! Specify more precise selector.", text));
+		}
+		return elements.get(0);
+	}
+
+	protected WebElement findElementByPartClassName(String partClassName) {
+		List<WebElement> elements = getDriver().findElements(By.xpath("//*[contains(@class, '" + partClassName + "']"));
+		if (elements.size() > 1) {
+			throw new Error(String.format("More than one elements found by partClassName '%s'! Specify more precise selector.", partClassName));
+		}
+		return elements.get(0);
+	}
+
 	public void clear(By byIdentifier) {
 		findElement(byIdentifier).clear();
 	}
 
+	public List<String> getComboBoxOptions(By byIdentifier) {
+		LocalTime start = LocalTime.now();
+		logger.info("Getting available options in ComboBox>: " + byIdentifier);
+		List<String> comboOptions = new ArrayList<>();
+		try {
+			List<WebElement> allOptions;
+			waitForElementToBeVisible(byIdentifier);
+			if (isElementVisible(byIdentifier)) {
+				Select dropdown = new Select(findElement(byIdentifier));
+				allOptions = dropdown.getOptions();
+			} else {
+				waitForPageToLoad(TimeOuts.TIMEOUT_10);
+				WebElement combo = findElement(byIdentifier);
+				Select dropdown = new Select(combo);
+				allOptions = dropdown.getOptions();
+			}
+			allOptions.stream()
+					.filter(option -> option.isDisplayed())
+					.forEach(option -> comboOptions.add(option.getText()));
+		} catch (StaleElementReferenceException exc) {
+			if (Duration.between(start, LocalTime.now()).getSeconds() >= TimeOuts.TIMEOUT_5) {
+				throw new Error(String.format("Stale element ref found while getting ComboBox '%s' options.", byIdentifier));
+			} else {
+				waitABit(TimeOuts.TIMEOUT_1000);
+				getComboBoxOptions(byIdentifier);
+			}
+		}
+		return comboOptions;
+	}
+
+	public void switchToFrame(String frameNameOrID) {
+		WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(TimeOuts.TIMEOUT_5));
+		wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(frameNameOrID));
+		logger.info("Switched to frame: " + frameNameOrID);
+	}
+
+	public void switchToWindow(String windowName, int maxTimeOutInSeconds) {
+		boolean windowFound = false;
+		LocalTime start = LocalTime.now();
+		do {
+			Set<String> windowsHandles = getDriver().getWindowHandles();
+			for (String window : windowsHandles) {
+				getDriver().switchTo().window(window);
+				String currentTitle = getTitle();
+				if (currentTitle.contains(windowName)) {
+					logger.info("Found window: '" + windowName + "' and switched to it.");
+					windowFound = true;
+					break;
+				} else {
+					if (Duration.between(start, LocalTime.now()).getSeconds() >= maxTimeOutInSeconds) {
+						throw new WebDriverException(String.format("Window %s was not found within %s sec", windowName, maxTimeOutInSeconds));
+					} else waitABit(TimeOuts.TIMEOUT_500);
+				}
+			}
+		} while (!windowFound);
+	}
+
+	public String getTitle() {
+		String title = getDriver().getTitle();
+		logger.info("Pate title is: " + title);
+		return title;
+	}
 
 }
