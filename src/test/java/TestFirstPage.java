@@ -1,8 +1,8 @@
-import com.google.pages.setup.SetupUIGoogle;
+import com.google.pages.setup.SetupUI;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class Test1 extends SetupUIGoogle {
+public class TestFirstPage extends SetupUI {
 
 	@Test
 	public void test01_isPopUpVisible() {

@@ -5,11 +5,10 @@ import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FirstPage extends BaseGPage {
-	private static final Logger logger = LoggerFactory.getLogger(BaseGPage.class);
+public class FirstPage extends BasePage {
+	private static final Logger logger = LoggerFactory.getLogger(FirstPage.class);
 
-	private By popupBeforeYouGo = By.xpath("//div[text()=\"Zanim przejdziesz do wyszukiwarki Google\"]/../../../../div");
-	private By popupBeforeYouGoContainer = By.xpath("//div[@title='Zanim przejdziesz do wyszukiwarki Google']");
+	private final By popupBeforeYouGoContainer = By.xpath("//div[@title='Zanim przejdziesz do wyszukiwarki Google']");
 
 	public FirstPage(WebDriver driver) {
 		super(driver);
