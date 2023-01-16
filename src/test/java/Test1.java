@@ -1,11 +1,11 @@
-import com.google.pages.setup.SetupUIGoogle;
-import org.testng.Assert;
+import com.google.pages.setup.SetupUI;
 import org.testng.annotations.Test;
 
-public class Test1 extends SetupUIGoogle {
+public class Test1 extends SetupUI {
 
 	@Test
-	public void test01_isPopUpVisible() {
-		Assert.assertTrue(firstPage.isPopupBeforeYouGoVisible(), "Popup 'Before you go' should be visible");
+	public void test01_submitPinCode() throws InterruptedException {
+		firstPage.flipCartHelp();
+		//assert pincode is visible
 	}
 }

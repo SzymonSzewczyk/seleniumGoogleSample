@@ -1,28 +1,28 @@
 package com.google.pages.setup;
 
 
-import com.google.pages.BaseGPage;
+import com.google.pages.BasePage;
 import com.google.pages.FirstPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-public abstract class SetupUIGoogle extends GenericUI {
-	protected final Logger logger = LoggerFactory.getLogger(SetupUIGoogle.class);
+public abstract class SetupUI extends GenericUI {
+	protected final Logger logger = LoggerFactory.getLogger(SetupUI.class);
 
-	protected BaseGPage basePage;
+	protected BasePage basePage;
 	protected FirstPage firstPage;
 
 	@BeforeClass(alwaysRun = true)
 	public void setupBefore() {
 		initDriver();
-		driver.navigate().to("https://www.google.com/");
+		driver.navigate().to("https://flipkart.com");
 		initPages();
 	}
 
 	private void initPages() {
-		basePage = new BaseGPage(driver);
+		basePage = new BasePage(driver);
 		firstPage = new FirstPage(driver);
 	}
 
